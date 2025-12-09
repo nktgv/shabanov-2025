@@ -6,6 +6,5 @@ public enum StudentStatus
     AcademicLeave,
     Expelled,
     Graduated,
-    Transferred,
-    Suspended
+    Transferred
 }

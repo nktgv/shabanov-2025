@@ -1,10 +1,9 @@
 namespace RESTFul.Domain.Enums;
 
-public enum StudyForm
+public enum EducationForm
 {
     FullTime,
     PartTime,
     Evening,
-    Distance,
-    Combined
+    Distance
 }

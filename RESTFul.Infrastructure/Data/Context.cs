@@ -1,6 +1,7 @@
-﻿namespace RESTFul.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using RESTFul.Domain.Model;
+using RESTFul.Domain.Entities;
+
+namespace RESTFul.Infrastructure;
 
 public class Context : DbContext
 {
@@ -8,274 +9,241 @@ public class Context : DbContext
     {
     }
 
-    // Person and derived entities
+    // Core entities
     public DbSet<Student> Students { get; set; }
-    public DbSet<Teacher> Teachers { get; set; }
-
-    // Organizational entities
+    public DbSet<Group> Groups { get; set; }
+    public DbSet<Specialty> Specialties { get; set; }
     public DbSet<Faculty> Faculties { get; set; }
-    public DbSet<Department> Departments { get; set; }
-    public DbSet<AcademicGroup> AcademicGroups { get; set; }
-    public DbSet<Specialization> Specializations { get; set; }
 
     // Academic entities
     public DbSet<Subject> Subjects { get; set; }
-    public DbSet<AcademicRecord> AcademicRecords { get; set; }
-    public DbSet<Grade> Grades { get; set; }
+    public DbSet<AcademicPerformance> AcademicPerformances { get; set; }
 
-    // Student movement entities
+    // Movement entities
     public DbSet<Enrollment> Enrollments { get; set; }
-    public DbSet<StudentMovement> StudentMovements { get; set; }
-    public DbSet<Order> Orders { get; set; }
-
-    // Document and address entities
-    public DbSet<DocumentType> DocumentTypes { get; set; }
-    public DbSet<PersonalDocument> PersonalDocuments { get; set; }
-    public DbSet<Address> Addresses { get; set; }
-    public DbSet<ContactInfo> ContactInfos { get; set; }
 
     // System entities
     public DbSet<User> Users { get; set; }
-    public DbSet<Role> Roles { get; set; }
-    public DbSet<Report> Reports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        ConfigurePersonEntities(modelBuilder);
-        ConfigureOrganizationalEntities(modelBuilder);
-        ConfigureAcademicEntities(modelBuilder);
-        ConfigureStudentMovementEntities(modelBuilder);
-        ConfigureDocumentEntities(modelBuilder);
-        ConfigureSystemEntities(modelBuilder);
+        ConfigureStudentEntity(modelBuilder);
+        ConfigureGroupEntity(modelBuilder);
+        ConfigureSpecialtyEntity(modelBuilder);
+        ConfigureFacultyEntity(modelBuilder);
+        ConfigureAcademicPerformanceEntity(modelBuilder);
+        ConfigureEnrollmentEntity(modelBuilder);
+        ConfigureUserEntity(modelBuilder);
     }
 
-    private void ConfigurePersonEntities(ModelBuilder modelBuilder)
+    private void ConfigureStudentEntity(ModelBuilder modelBuilder)
     {
-        // Configure TPH (Table-Per-Hierarchy) for Person
-        modelBuilder.Entity<Person>()
-            .HasDiscriminator<string>("PersonType")
-            .HasValue<Student>("Student")
-            .HasValue<Teacher>("Teacher");
+        modelBuilder.Entity<Student>(entity =>
+        {
+            entity.HasKey(s => s.Id);
 
-        // Student configuration
-        modelBuilder.Entity<Student>()
-            .HasOne(s => s.Group)
-            .WithMany(g => g.Students)
-            .HasForeignKey(s => s.GroupId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(s => s.FirstName)
+                .IsRequired()
+                .HasMaxLength(100);
 
-        // Teacher configuration
-        modelBuilder.Entity<Teacher>()
-            .HasOne(t => t.Department)
-            .WithMany(d => d.Teachers)
-            .HasForeignKey(t => t.DepartmentId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(s => s.LastName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(s => s.MiddleName)
+                .HasMaxLength(100);
+
+            entity.Property(s => s.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(s => s.Phone)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(s => s.PassportSeries)
+                .IsRequired()
+                .HasMaxLength(10);
+
+            entity.Property(s => s.PassportNumber)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasOne(s => s.Group)
+                .WithMany(g => g.Students)
+                .HasForeignKey(s => s.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(s => s.Enrollments)
+                .WithOne(e => e.Student)
+                .HasForeignKey(e => e.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(s => s.AcademicRecords)
+                .WithOne(ar => ar.Student)
+                .HasForeignKey(ar => ar.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
-    private void ConfigureOrganizationalEntities(ModelBuilder modelBuilder)
+    private void ConfigureGroupEntity(ModelBuilder modelBuilder)
     {
-        // Faculty configuration
-        modelBuilder.Entity<Faculty>()
-            .HasOne(f => f.Decan)
-            .WithMany()
-            .HasForeignKey(f => f.DecanId)
-            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Group>(entity =>
+        {
+            entity.HasKey(g => g.Id);
 
-        // Department configuration
-        modelBuilder.Entity<Department>()
-            .HasOne(d => d.Faculty)
-            .WithMany(f => f.Departments)
-            .HasForeignKey(d => d.FacultyId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(g => g.Name)
+                .IsRequired()
+                .HasMaxLength(100);
 
-        modelBuilder.Entity<Department>()
-            .HasOne(d => d.HeadTeacher)
-            .WithMany(t => t.HeadedDepartments)
-            .HasForeignKey(d => d.HeadTeacherId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(g => g.Code)
+                .IsRequired()
+                .HasMaxLength(50);
 
-        // AcademicGroup configuration
-        modelBuilder.Entity<AcademicGroup>()
-            .HasOne(g => g.Department)
-            .WithMany(d => d.AcademicGroups)
-            .HasForeignKey(g => g.DepartmentId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(g => g.Specialty)
+                .WithMany(s => s.Groups)
+                .HasForeignKey(g => g.SpecialtyId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<AcademicGroup>()
-            .HasOne(g => g.Specialization)
-            .WithMany(s => s.AcademicGroups)
-            .HasForeignKey(g => g.SpecializationId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<AcademicGroup>()
-            .HasOne(g => g.Curator)
-            .WithMany(t => t.CuratedGroups)
-            .HasForeignKey(g => g.CuratorId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        // Specialization configuration
-        modelBuilder.Entity<Specialization>()
-            .HasOne(s => s.Department)
-            .WithMany(d => d.Specializations)
-            .HasForeignKey(s => s.DepartmentId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(g => g.Curator)
+                .WithMany(u => u.CuratedGroups)
+                .HasForeignKey(g => g.CuratorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
-    private void ConfigureAcademicEntities(ModelBuilder modelBuilder)
+    private void ConfigureSpecialtyEntity(ModelBuilder modelBuilder)
     {
-        // AcademicRecord configuration
-        modelBuilder.Entity<AcademicRecord>()
-            .HasOne(ar => ar.Student)
-            .WithMany(s => s.AcademicRecords)
-            .HasForeignKey(ar => ar.StudentId)
-            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Specialty>(entity =>
+        {
+            entity.HasKey(s => s.Id);
 
-        modelBuilder.Entity<AcademicRecord>()
-            .HasOne(ar => ar.Subject)
-            .WithMany(s => s.AcademicRecords)
-            .HasForeignKey(ar => ar.SubjectId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(s => s.Name)
+                .IsRequired()
+                .HasMaxLength(200);
 
-        modelBuilder.Entity<AcademicRecord>()
-            .HasOne(ar => ar.Teacher)
-            .WithMany(t => t.AcademicRecords)
-            .HasForeignKey(ar => ar.TeacherId)
-            .OnDelete(DeleteBehavior.SetNull);
+            entity.Property(s => s.Code)
+                .IsRequired()
+                .HasMaxLength(50);
 
-        // Grade configuration
-        modelBuilder.Entity<Grade>()
-            .HasOne(g => g.AcademicRecord)
-            .WithMany(ar => ar.Grades)
-            .HasForeignKey(g => g.RecordId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Grade>()
-            .HasOne(g => g.Teacher)
-            .WithMany(t => t.Grades)
-            .HasForeignKey(g => g.TeacherId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(s => s.Faculty)
+                .WithMany(f => f.Specialties)
+                .HasForeignKey(s => s.FacultyId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
-    private void ConfigureStudentMovementEntities(ModelBuilder modelBuilder)
+    private void ConfigureFacultyEntity(ModelBuilder modelBuilder)
     {
-        // Enrollment configuration
-        modelBuilder.Entity<Enrollment>()
-            .HasOne(e => e.Student)
-            .WithMany(s => s.Enrollments)
-            .HasForeignKey(e => e.StudentId)
-            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Faculty>(entity =>
+        {
+            entity.HasKey(f => f.Id);
 
-        modelBuilder.Entity<Enrollment>()
-            .HasOne(e => e.Order)
-            .WithMany(o => o.Enrollments)
-            .HasForeignKey(e => e.OrderId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(f => f.Name)
+                .IsRequired()
+                .HasMaxLength(200);
 
-        // StudentMovement configuration
-        modelBuilder.Entity<StudentMovement>()
-            .HasOne(sm => sm.Student)
-            .WithMany(s => s.Movements)
-            .HasForeignKey(sm => sm.StudentId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(f => f.ShortName)
+                .IsRequired()
+                .HasMaxLength(50);
 
-        modelBuilder.Entity<StudentMovement>()
-            .HasOne(sm => sm.FromGroup)
-            .WithMany()
-            .HasForeignKey(sm => sm.FromGroupId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(f => f.Dean)
+                .WithMany()
+                .HasForeignKey(f => f.DeanId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<StudentMovement>()
-            .HasOne(sm => sm.ToGroup)
-            .WithMany()
-            .HasForeignKey(sm => sm.ToGroupId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<StudentMovement>()
-            .HasOne(sm => sm.Order)
-            .WithMany(o => o.StudentMovements)
-            .HasForeignKey(sm => sm.OrderId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // Order configuration
-        modelBuilder.Entity<Order>()
-            .HasOne(o => o.Creator)
-            .WithMany(u => u.CreatedOrders)
-            .HasForeignKey(o => o.CreatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Order>()
-            .HasOne(o => o.Approver)
-            .WithMany(u => u.ApprovedOrders)
-            .HasForeignKey(o => o.ApprovedBy)
-            .OnDelete(DeleteBehavior.SetNull);
+            entity.HasMany(f => f.Staff)
+                .WithMany()
+                .UsingEntity(j => j.ToTable("FacultyStaff"));
+        });
     }
 
-    private void ConfigureDocumentEntities(ModelBuilder modelBuilder)
+    private void ConfigureAcademicPerformanceEntity(ModelBuilder modelBuilder)
     {
-        // PersonalDocument configuration
-        modelBuilder.Entity<PersonalDocument>()
-            .HasOne(pd => pd.Person)
-            .WithMany(p => p.Documents)
-            .HasForeignKey(pd => pd.PersonId)
-            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<AcademicPerformance>(entity =>
+        {
+            entity.HasKey(ap => ap.Id);
 
-        modelBuilder.Entity<PersonalDocument>()
-            .HasOne(pd => pd.DocumentType)
-            .WithMany(dt => dt.PersonalDocuments)
-            .HasForeignKey(pd => pd.DocumentTypeId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(ap => ap.GradeLetter)
+                .HasMaxLength(50);
 
-        // Address configuration
-        modelBuilder.Entity<Address>()
-            .HasOne(a => a.Person)
-            .WithMany(p => p.Addresses)
-            .HasForeignKey(a => a.PersonId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(ap => ap.Student)
+                .WithMany(s => s.AcademicRecords)
+                .HasForeignKey(ap => ap.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        // ContactInfo configuration
-        modelBuilder.Entity<ContactInfo>()
-            .HasOne(ci => ci.Person)
-            .WithMany(p => p.Contacts)
-            .HasForeignKey(ci => ci.PersonId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(ap => ap.Subject)
+                .WithMany(s => s.Performances)
+                .HasForeignKey(ap => ap.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(ap => ap.Teacher)
+                .WithMany(u => u.TaughtPerformances)
+                .HasForeignKey(ap => ap.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
-    private void ConfigureSystemEntities(ModelBuilder modelBuilder)
+    private void ConfigureEnrollmentEntity(ModelBuilder modelBuilder)
     {
-        // User configuration
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Person)
-            .WithMany()
-            .HasForeignKey(u => u.PersonId)
-            .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<Enrollment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
 
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.Roles)
-            .WithMany(r => r.Users)
-            .UsingEntity(j => j.ToTable("UserRoles"));
+            entity.Property(e => e.OrderNumber)
+                .IsRequired()
+                .HasMaxLength(100);
 
-        // Report configuration
-        modelBuilder.Entity<Report>()
-            .HasOne(r => r.Generator)
-            .WithMany(u => u.GeneratedReports)
-            .HasForeignKey(r => r.GeneratedBy)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(e => e.Reason)
+                .IsRequired()
+                .HasMaxLength(500);
 
-        // Configure JSON columns
-        modelBuilder.Entity<Role>()
-            .Property(r => r.Permissions)
-            .HasConversion(
-                v => string.Join(',', v),
-                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
-            );
+            entity.Property(e => e.Comment)
+                .HasMaxLength(1000);
 
-        modelBuilder.Entity<Report>()
-            .Property(r => r.Parameters)
-            .HasConversion(
-                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null),
-                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions)null) ?? new Dictionary<string, object>()
-            );
+            entity.HasOne(e => e.Student)
+                .WithMany(s => s.Enrollments)
+                .HasForeignKey(e => e.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private void ConfigureUserEntity(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(u => u.Id);
+
+            entity.Property(u => u.UserName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(u => u.FirstName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(u => u.LastName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(u => u.MiddleName)
+                .HasMaxLength(100);
+
+            entity.HasMany(u => u.CuratedGroups)
+                .WithOne(g => g.Curator)
+                .HasForeignKey(g => g.CuratorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(u => u.TaughtPerformances)
+                .WithOne(ap => ap.Teacher)
+                .HasForeignKey(ap => ap.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 }

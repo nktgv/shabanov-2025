@@ -1,10 +1,9 @@
 namespace RESTFul.Domain.Enums;
 
-public enum DegreeType
+public enum EducationLevel
 {
     Bachelor,
-    Master,
     Specialist,
-    PhD,
-    PostDoc
+    Master,
+    Postgraduate
 }

@@ -2,8 +2,11 @@ namespace RESTFul.Domain.Enums;
 
 public enum EnrollmentType
 {
-    FirstTime,
+    Admission,
     Transfer,
-    Restoration,
-    SecondEducation
+    Expulsion,
+    AcademicLeave,
+    ReturnFromLeave,
+    Graduation,
+    Restoration
 }
