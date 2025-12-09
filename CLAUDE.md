@@ -22,12 +22,22 @@ The solution consists of three projects:
 
 ### Database
 
-- Database: SQL Server (LocalDB)
-- ORM: Entity Framework Core 9.0.9
-- Connection string configured in `appsettings.json` (note: contains typo "Integrateed" instead of "Integrated")
-- DbContext: `RESTFul.Infrastructure.Context` registered in Program.cs:11
+- Database: PostgreSQL
+- ORM: Entity Framework Core 9.0.9 with Npgsql
+- Connection string configured in `appsettings.json`
+- DbContext: `RESTFul.Infrastructure.Context` registered in Program.cs
+- **Auto-migrations**: Database schema is automatically created/updated on application startup
 
 ## Development Commands
+
+### Setup PostgreSQL Connection
+
+Update the connection string in `RESTFul.API/appsettings.json`:
+```json
+"ConnectionStrings": {
+  "Database": "Host=localhost;Port=5432;Database=restful_db;Username=postgres;Password=your_password"
+}
+```
 
 ### Build
 ```bash
@@ -39,13 +49,12 @@ dotnet build
 dotnet run --project RESTFul.API/RESTFul.API.csproj
 ```
 
-### Database migrations
+**Note**: The application automatically creates the database and applies all migrations on startup. No manual migration commands needed.
+
+### Manual Database migrations (optional)
 ```bash
 # Create a new migration
 dotnet ef migrations add <MigrationName> --project RESTFul.Infrastructure --startup-project RESTFul.API
-
-# Update database
-dotnet ef database update --project RESTFul.Infrastructure --startup-project RESTFul.API
 
 # Remove last migration
 dotnet ef migrations remove --project RESTFul.Infrastructure --startup-project RESTFul.API
